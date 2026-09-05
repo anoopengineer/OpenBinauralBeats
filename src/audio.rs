@@ -290,3 +290,81 @@ impl Voice {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SR: f32 = 48_000.0;
+
+    fn setup(carrier: f32, beat: f32) -> (Engine, Voice) {
+        let engine = Engine::new();
+        engine.set_tone(carrier, beat, 0.0);
+        engine.set_volume(1.0);
+        engine.shared.playing.store(true, Ordering::Relaxed);
+        let voice = Voice::new(SR, Arc::clone(&engine.shared));
+        (engine, voice)
+    }
+
+    fn render(voice: &mut Voice, seconds: f32) -> Vec<f32> {
+        let mut out = vec![0.0f32; (seconds * SR) as usize * 2];
+        for block in out.chunks_mut(512 * 2) {
+            voice.render(block, 2);
+        }
+        out
+    }
+
+    /// Frequency estimate from rising zero crossings over the given interleaved channel.
+    fn freq(buf: &[f32], ch: usize) -> f32 {
+        let s: Vec<f32> = buf.iter().skip(ch).step_by(2).copied().collect();
+        let crossings: Vec<usize> = (1..s.len())
+            .filter(|&i| s[i - 1] < 0.0 && s[i] >= 0.0)
+            .collect();
+        let span = (crossings[crossings.len() - 1] - crossings[0]) as f32 / SR;
+        (crossings.len() - 1) as f32 / span
+    }
+
+    #[test]
+    fn left_is_carrier_right_is_carrier_plus_beat() {
+        let (_e, mut v) = setup(200.0, 40.0);
+        let out = render(&mut v, 1.0);
+        assert!(
+            (freq(&out, 0) - 200.0).abs() < 0.5,
+            "left {}",
+            freq(&out, 0)
+        );
+        assert!(
+            (freq(&out, 1) - 240.0).abs() < 0.5,
+            "right {}",
+            freq(&out, 1)
+        );
+        assert!(out.iter().all(|x| x.abs() <= TONE_GAIN + 1e-3));
+    }
+
+    #[test]
+    fn glide_is_continuous_and_reaches_target() {
+        let (e, mut v) = setup(400.0, 10.0);
+        render(&mut v, 0.5);
+        e.set_tone(200.0, 2.0, 1.0);
+        let out = render(&mut v, 1.5);
+        // No sample-to-sample jump bigger than a 640 Hz sine at full scale could make.
+        let max_step = std::f32::consts::TAU * 640.0 / SR * TONE_GAIN * 1.05;
+        for ch in 0..2 {
+            let s: Vec<f32> = out.iter().skip(ch).step_by(2).copied().collect();
+            assert!(s.windows(2).all(|w| (w[1] - w[0]).abs() <= max_step));
+        }
+        let tail = &out[out.len() - (0.4 * SR) as usize * 2..];
+        assert!((freq(tail, 0) - 200.0).abs() < 1.0);
+        assert!((freq(tail, 1) - 202.0).abs() < 1.0);
+    }
+
+    #[test]
+    fn stop_fades_to_silence_and_flags_it() {
+        let (mut e, mut v) = setup(300.0, 6.0);
+        render(&mut v, 0.2);
+        e.stop(0.08);
+        render(&mut v, 0.5);
+        assert!(e.shared.silent.load(Ordering::Relaxed));
+        assert!(render(&mut v, 0.05).iter().all(|&x| x == 0.0));
+    }
+}
