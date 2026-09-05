@@ -1,0 +1,269 @@
+use std::time::Duration;
+
+use eframe::egui::{self, Align2, Color32, FontId, RichText, Sense, Stroke, StrokeKind, vec2};
+use serde::{Deserialize, Serialize};
+
+use crate::audio::Engine;
+use crate::presets::{self, BUILTINS};
+
+const STORAGE_KEY: &str = "settings";
+const STOP_RELEASE_SECS: f32 = 0.08;
+const ACCENT: Color32 = Color32::from_rgb(64, 170, 160);
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+enum Active {
+    Builtin(String),
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(default)]
+struct Settings {
+    carrier: f32,
+    beat: f32,
+    active: Active,
+    volume: f32,
+    glide_secs: f32,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        let first = &BUILTINS[0];
+        Self {
+            carrier: first.carrier,
+            beat: first.beat,
+            active: Active::Builtin(first.name.to_string()),
+            volume: 0.4,
+            glide_secs: 4.0,
+        }
+    }
+}
+
+pub struct App {
+    s: Settings,
+    engine: Engine,
+}
+
+impl App {
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        setup_style(&cc.egui_ctx);
+        let s: Settings = cc
+            .storage
+            .and_then(|st| eframe::get_value(st, STORAGE_KEY))
+            .unwrap_or_default();
+        let engine = Engine::new();
+        engine.set_tone(s.carrier, s.beat, 0.0);
+        engine.set_volume(s.volume);
+        Self { s, engine }
+    }
+
+    fn select(&mut self, carrier: f32, beat: f32, active: Active) {
+        self.s.carrier = carrier;
+        self.s.beat = beat;
+        self.s.active = active;
+        let glide = if self.engine.is_playing() {
+            self.s.glide_secs
+        } else {
+            0.0
+        };
+        self.engine.set_tone(carrier, beat, glide);
+    }
+
+    fn select_builtin(&mut self, i: usize) {
+        let p = &BUILTINS[i];
+        self.select(p.carrier, p.beat, Active::Builtin(p.name.to_string()));
+    }
+
+    fn toggle_play(&mut self) {
+        if self.engine.is_playing() {
+            self.engine.stop(STOP_RELEASE_SECS);
+        } else {
+            self.engine.play();
+        }
+    }
+
+    fn housekeeping(&mut self, ctx: &egui::Context) {
+        if self.engine.tick() {
+            ctx.request_repaint_after(Duration::from_millis(100));
+        }
+    }
+
+    fn now_playing(&mut self, ui: &mut egui::Ui) {
+        let (title, subtitle) = match &self.s.active {
+            Active::Builtin(name) => (
+                name.clone(),
+                format!(
+                    "{} · {} Hz beat",
+                    presets::band_for(self.s.beat),
+                    fmt_hz(self.s.beat)
+                ),
+            ),
+        };
+        card(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    ui.label(RichText::new(title).size(22.0).strong());
+                    ui.label(RichText::new(subtitle).weak());
+                });
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    ui.label(
+                        RichText::new(format!(
+                            "L {} Hz\nR {} Hz",
+                            fmt_hz(self.s.carrier),
+                            fmt_hz(self.s.carrier + self.s.beat)
+                        ))
+                        .monospace()
+                        .weak(),
+                    );
+                });
+            });
+            ui.add_space(6.0);
+
+            let playing = self.engine.is_playing();
+            let label = if playing { "Stop" } else { "Play" };
+            let button = egui::Button::new(RichText::new(label).size(18.0).strong())
+                .fill(if playing {
+                    Color32::from_rgb(70, 70, 78)
+                } else {
+                    ACCENT
+                })
+                .corner_radius(8.0);
+            if ui.add_sized([ui.available_width(), 44.0], button).clicked() {
+                self.toggle_play();
+            }
+
+            if let Some(err) = &self.engine.error {
+                ui.colored_label(Color32::from_rgb(230, 110, 100), err);
+            }
+        });
+    }
+
+    fn preset_list(&mut self, ui: &mut egui::Ui) {
+        section(ui, "Presets");
+        let mut picked = None;
+        for (i, p) in BUILTINS.iter().enumerate() {
+            let selected = self.s.active == Active::Builtin(p.name.to_string());
+            let right = format!("{} Hz", fmt_hz(p.beat));
+            let subtitle = format!("{} · {}", p.band, p.blurb);
+            if preset_row(ui, selected, p.name, &subtitle, &right).clicked() {
+                picked = Some(i);
+            }
+        }
+        if let Some(i) = picked {
+            self.select_builtin(i);
+        }
+    }
+}
+
+impl eframe::App for App {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = ui.ctx().clone();
+        self.housekeeping(&ctx);
+
+        egui::CentralPanel::default().show(ui, |ui| {
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                ui.add_space(4.0);
+                self.now_playing(ui);
+                self.preset_list(ui);
+                ui.add_space(8.0);
+                ui.vertical_centered(|ui| {
+                    ui.label(RichText::new("Use stereo headphones").small().weak());
+                });
+                ui.add_space(4.0);
+            });
+        });
+    }
+
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        eframe::set_value(storage, STORAGE_KEY, &self.s);
+    }
+}
+
+fn setup_style(ctx: &egui::Context) {
+    ctx.set_theme(egui::Theme::Dark);
+    ctx.style_mut_of(egui::Theme::Dark, |style| {
+        style.spacing.item_spacing = vec2(8.0, 6.0);
+        style.spacing.button_padding = vec2(10.0, 5.0);
+        style.spacing.slider_width = 180.0;
+        let v = &mut style.visuals;
+        v.selection.bg_fill = ACCENT.linear_multiply(0.55);
+        v.selection.stroke = Stroke::new(1.0, ACCENT);
+        v.panel_fill = Color32::from_rgb(22, 23, 27);
+        v.extreme_bg_color = Color32::from_rgb(14, 15, 18);
+    });
+}
+
+fn section(ui: &mut egui::Ui, title: &str) {
+    ui.add_space(10.0);
+    ui.label(RichText::new(title.to_uppercase()).small().strong().weak());
+    ui.add_space(2.0);
+}
+
+fn card<R>(ui: &mut egui::Ui, add: impl FnOnce(&mut egui::Ui) -> R) -> R {
+    egui::Frame::new()
+        .fill(Color32::from_rgb(32, 33, 39))
+        .corner_radius(10.0)
+        .inner_margin(12.0)
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            add(ui)
+        })
+        .inner
+}
+
+fn preset_row(
+    ui: &mut egui::Ui,
+    selected: bool,
+    title: &str,
+    subtitle: &str,
+    right: &str,
+) -> egui::Response {
+    let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 46.0), Sense::click());
+    if ui.is_rect_visible(rect) {
+        let base = Color32::from_rgb(32, 33, 39);
+        let fill = if selected {
+            ACCENT.linear_multiply(0.35)
+        } else if resp.hovered() {
+            Color32::from_rgb(42, 44, 52)
+        } else {
+            base
+        };
+        let stroke = if selected {
+            Stroke::new(1.0, ACCENT)
+        } else {
+            Stroke::NONE
+        };
+        let p = ui.painter();
+        p.rect(rect, 8.0, fill, stroke, StrokeKind::Inside);
+        let text = ui.visuals().text_color();
+        let weak = ui.visuals().weak_text_color();
+        let left = rect.left_center() + vec2(12.0, 0.0);
+        p.text(
+            left - vec2(0.0, 9.0),
+            Align2::LEFT_CENTER,
+            title,
+            FontId::proportional(15.0),
+            text,
+        );
+        p.text(
+            left + vec2(0.0, 10.0),
+            Align2::LEFT_CENTER,
+            subtitle,
+            FontId::proportional(12.0),
+            weak,
+        );
+        p.text(
+            rect.right_center() - vec2(12.0, 0.0),
+            Align2::RIGHT_CENTER,
+            right,
+            FontId::monospace(14.0),
+            if selected { text } else { weak },
+        );
+    }
+    ui.add_space(2.0);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+fn fmt_hz(v: f32) -> String {
+    let s = format!("{v:.2}");
+    s.trim_end_matches('0').trim_end_matches('.').to_string()
+}
