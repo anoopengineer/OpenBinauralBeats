@@ -1,10 +1,10 @@
 use std::time::Duration;
 
-use eframe::egui::{self, Align2, Color32, FontId, RichText, Sense, Stroke, StrokeKind, vec2};
+use eframe::egui::{self, Align2, Color32, FontId, Key, RichText, Sense, Stroke, StrokeKind, vec2};
 use serde::{Deserialize, Serialize};
 
 use crate::audio::Engine;
-use crate::presets::{self, BUILTINS};
+use crate::presets::{self, BEAT_RANGE, BUILTINS, CARRIER_RANGE};
 
 const STORAGE_KEY: &str = "settings";
 const STOP_RELEASE_SECS: f32 = 0.08;
@@ -13,6 +13,7 @@ const ACCENT: Color32 = Color32::from_rgb(64, 170, 160);
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 enum Active {
     Builtin(String),
+    Custom,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -41,6 +42,9 @@ impl Default for Settings {
 pub struct App {
     s: Settings,
     engine: Engine,
+    carrier_text: String,
+    beat_text: String,
+    input_error: Option<String>,
 }
 
 impl App {
@@ -53,13 +57,22 @@ impl App {
         let engine = Engine::new();
         engine.set_tone(s.carrier, s.beat, 0.0);
         engine.set_volume(s.volume);
-        Self { s, engine }
+        Self {
+            carrier_text: fmt_hz(s.carrier),
+            beat_text: fmt_hz(s.beat),
+            s,
+            engine,
+            input_error: None,
+        }
     }
 
     fn select(&mut self, carrier: f32, beat: f32, active: Active) {
         self.s.carrier = carrier;
         self.s.beat = beat;
         self.s.active = active;
+        self.carrier_text = fmt_hz(carrier);
+        self.beat_text = fmt_hz(beat);
+        self.input_error = None;
         let glide = if self.engine.is_playing() {
             self.s.glide_secs
         } else {
@@ -71,6 +84,16 @@ impl App {
     fn select_builtin(&mut self, i: usize) {
         let p = &BUILTINS[i];
         self.select(p.carrier, p.beat, Active::Builtin(p.name.to_string()));
+    }
+
+    fn apply_custom(&mut self) {
+        let carrier = presets::parse_hz(&self.carrier_text, &CARRIER_RANGE)
+            .map_err(|e| format!("Carrier {e}"));
+        let beat = presets::parse_hz(&self.beat_text, &BEAT_RANGE).map_err(|e| format!("Beat {e}"));
+        match (carrier, beat) {
+            (Ok(c), Ok(b)) => self.select(c, b, Active::Custom),
+            (Err(e), _) | (_, Err(e)) => self.input_error = Some(e),
+        }
     }
 
     fn toggle_play(&mut self) {
@@ -91,6 +114,14 @@ impl App {
         let (title, subtitle) = match &self.s.active {
             Active::Builtin(name) => (
                 name.clone(),
+                format!(
+                    "{} · {} Hz beat",
+                    presets::band_for(self.s.beat),
+                    fmt_hz(self.s.beat)
+                ),
+            ),
+            Active::Custom => (
+                "Custom".to_string(),
                 format!(
                     "{} · {} Hz beat",
                     presets::band_for(self.s.beat),
@@ -152,6 +183,49 @@ impl App {
             self.select_builtin(i);
         }
     }
+
+    fn custom(&mut self, ui: &mut egui::Ui) {
+        section(ui, "Custom frequencies");
+        card(ui, |ui| {
+            let mut submit = false;
+            egui::Grid::new("custom")
+                .num_columns(3)
+                .spacing([8.0, 8.0])
+                .show(ui, |ui| {
+                    ui.label("Carrier");
+                    let r = ui.add(
+                        egui::TextEdit::singleline(&mut self.carrier_text)
+                            .desired_width(90.0)
+                            .hint_text("200"),
+                    );
+                    submit |= r.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter));
+                    ui.label(RichText::new("Hz  tone in left ear").weak());
+                    ui.end_row();
+
+                    ui.label("Beat");
+                    let r = ui.add(
+                        egui::TextEdit::singleline(&mut self.beat_text)
+                            .desired_width(90.0)
+                            .hint_text("40"),
+                    );
+                    submit |= r.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter));
+                    ui.label(RichText::new("Hz  difference, right ear").weak());
+                    ui.end_row();
+                });
+            ui.horizontal(|ui| {
+                if ui.button("Apply").clicked() {
+                    submit = true;
+                }
+                ui.label(RichText::new("or press Enter").small().weak());
+            });
+            if submit {
+                self.apply_custom();
+            }
+            if let Some(err) = &self.input_error {
+                ui.colored_label(Color32::from_rgb(230, 110, 100), err);
+            }
+        });
+    }
 }
 
 impl eframe::App for App {
@@ -164,6 +238,7 @@ impl eframe::App for App {
                 ui.add_space(4.0);
                 self.now_playing(ui);
                 self.preset_list(ui);
+                self.custom(ui);
                 ui.add_space(8.0);
                 ui.vertical_centered(|ui| {
                     ui.label(RichText::new("Use stereo headphones").small().weak());
