@@ -1,6 +1,8 @@
 use std::time::Duration;
 
-use eframe::egui::{self, Align2, Color32, FontId, Key, RichText, Sense, Stroke, StrokeKind, vec2};
+use eframe::egui::{
+    self, Align2, Color32, FontId, Key, Pos2, RichText, Sense, Stroke, StrokeKind, Vec2, vec2,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::audio::Engine;
@@ -147,6 +149,8 @@ impl App {
                     );
                 });
             });
+            ui.add_space(6.0);
+            beat_envelope(ui, self.s.beat, self.engine.is_playing());
             ui.add_space(6.0);
 
             let playing = self.engine.is_playing();
@@ -336,6 +340,38 @@ fn preset_row(
     }
     ui.add_space(2.0);
     resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// Static plot of the perceived beat envelope over one second. Not animated, so it costs
+/// nothing between interactions (and avoids flicker at gamma rates).
+fn beat_envelope(ui: &mut egui::Ui, beat: f32, active: bool) {
+    let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), 34.0), Sense::hover());
+    let p = ui.painter();
+    p.rect_filled(rect, 6.0, Color32::from_rgb(24, 25, 30));
+    let steps = (rect.width() as usize).max(2);
+    let points: Vec<Pos2> = (0..=steps)
+        .map(|i| {
+            let t = i as f32 / steps as f32;
+            let env = (std::f32::consts::PI * beat * t).cos().abs();
+            Pos2::new(
+                rect.left() + t * rect.width(),
+                rect.bottom() - 4.0 - env * (rect.height() - 8.0),
+            )
+        })
+        .collect();
+    let color = if active {
+        ACCENT
+    } else {
+        Color32::from_gray(90)
+    };
+    p.line(points, Stroke::new(1.5, color));
+    p.text(
+        rect.right_top() + Vec2::new(-6.0, 3.0),
+        Align2::RIGHT_TOP,
+        "1 s",
+        FontId::proportional(10.0),
+        Color32::from_gray(110),
+    );
 }
 
 fn fmt_hz(v: f32) -> String {
