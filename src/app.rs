@@ -230,6 +230,40 @@ impl App {
             }
         });
     }
+
+    fn sound(&mut self, ui: &mut egui::Ui) {
+        section(ui, "Sound");
+        card(ui, |ui| {
+            egui::Grid::new("sound")
+                .num_columns(2)
+                .spacing([12.0, 10.0])
+                .show(ui, |ui| {
+                    ui.label("Volume");
+                    let mut pct = self.s.volume * 100.0;
+                    if ui
+                        .add(
+                            egui::Slider::new(&mut pct, 0.0..=100.0)
+                                .suffix("%")
+                                .fixed_decimals(0),
+                        )
+                        .changed()
+                    {
+                        self.s.volume = pct / 100.0;
+                        self.engine.set_volume(self.s.volume);
+                    }
+                    ui.end_row();
+
+                    ui.label("Transition");
+                    ui.add(
+                        egui::Slider::new(&mut self.s.glide_secs, 0.0..=30.0)
+                            .suffix(" s")
+                            .fixed_decimals(0),
+                    )
+                    .on_hover_text("Glide time when switching presets during playback");
+                    ui.end_row();
+                });
+        });
+    }
 }
 
 impl eframe::App for App {
@@ -243,6 +277,7 @@ impl eframe::App for App {
                 self.now_playing(ui);
                 self.preset_list(ui);
                 self.custom(ui);
+                self.sound(ui);
                 ui.add_space(8.0);
                 ui.vertical_centered(|ui| {
                     ui.label(RichText::new("Use stereo headphones").small().weak());
