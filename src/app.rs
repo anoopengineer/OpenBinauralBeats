@@ -5,7 +5,7 @@ use eframe::egui::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::audio::Engine;
+use crate::audio::{Engine, Noise};
 use crate::presets::{self, BEAT_RANGE, BUILTINS, CARRIER_RANGE};
 
 const STORAGE_KEY: &str = "settings";
@@ -25,6 +25,8 @@ struct Settings {
     beat: f32,
     active: Active,
     volume: f32,
+    noise: Noise,
+    noise_level: f32,
     glide_secs: f32,
 }
 
@@ -36,6 +38,8 @@ impl Default for Settings {
             beat: first.beat,
             active: Active::Builtin(first.name.to_string()),
             volume: 0.4,
+            noise: Noise::Pink,
+            noise_level: 0.15,
             glide_secs: 4.0,
         }
     }
@@ -59,6 +63,7 @@ impl App {
         let engine = Engine::new();
         engine.set_tone(s.carrier, s.beat, 0.0);
         engine.set_volume(s.volume);
+        engine.set_noise(s.noise, s.noise_level);
         Self {
             carrier_text: fmt_hz(s.carrier),
             beat_text: fmt_hz(s.beat),
@@ -251,6 +256,39 @@ impl App {
                         self.s.volume = pct / 100.0;
                         self.engine.set_volume(self.s.volume);
                     }
+                    ui.end_row();
+
+                    ui.label("Noise");
+                    ui.horizontal(|ui| {
+                        let mut changed = false;
+                        egui::ComboBox::from_id_salt("noise")
+                            .width(80.0)
+                            .selected_text(self.s.noise.label())
+                            .show_ui(ui, |ui| {
+                                for n in Noise::ALL {
+                                    changed |= ui
+                                        .selectable_value(&mut self.s.noise, n, n.label())
+                                        .changed();
+                                }
+                            });
+                        ui.add_enabled_ui(self.s.noise != Noise::Off, |ui| {
+                            let mut pct = self.s.noise_level * 100.0;
+                            if ui
+                                .add(
+                                    egui::Slider::new(&mut pct, 0.0..=100.0)
+                                        .suffix("%")
+                                        .fixed_decimals(0),
+                                )
+                                .changed()
+                            {
+                                self.s.noise_level = pct / 100.0;
+                                changed = true;
+                            }
+                        });
+                        if changed {
+                            self.engine.set_noise(self.s.noise, self.s.noise_level);
+                        }
+                    });
                     ui.end_row();
 
                     ui.label("Transition");

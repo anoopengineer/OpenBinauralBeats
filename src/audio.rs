@@ -9,10 +9,13 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{FromSample, SampleFormat, SizedSample};
+use serde::{Deserialize, Serialize};
 
-/// Peak amplitude of each tone at full volume.
+/// Peak amplitude of each tone at full volume. Leaves headroom for noise.
 const TONE_GAIN: f32 = 0.5;
-/// Time constant for volume changes, in seconds.
+/// Peak amplitude of the noise bed at full volume and full noise level.
+const NOISE_GAIN: f32 = 0.35;
+/// Time constant for volume / noise-level changes, in seconds.
 const PARAM_SMOOTHING_SECS: f32 = 0.03;
 
 struct AtomicF32(AtomicU32);
@@ -29,6 +32,37 @@ impl AtomicF32 {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Noise {
+    Off,
+    White,
+    #[default]
+    Pink,
+    Brown,
+}
+
+impl Noise {
+    pub const ALL: [Noise; 4] = [Noise::Off, Noise::White, Noise::Pink, Noise::Brown];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Noise::Off => "Off",
+            Noise::White => "White",
+            Noise::Pink => "Pink",
+            Noise::Brown => "Brown",
+        }
+    }
+
+    fn from_u32(v: u32) -> Self {
+        match v {
+            1 => Noise::White,
+            2 => Noise::Pink,
+            3 => Noise::Brown,
+            _ => Noise::Off,
+        }
+    }
+}
+
 /// State shared between the UI and the audio callback.
 struct Shared {
     carrier: AtomicF32,
@@ -37,6 +71,8 @@ struct Shared {
     /// Bumped after carrier/beat/glide are written so the callback picks up a new target.
     tone_generation: AtomicU32,
     volume: AtomicF32,
+    noise_level: AtomicF32,
+    noise: AtomicU32,
     playing: AtomicBool,
     /// Fade-out time used when `playing` goes false.
     release_secs: AtomicF32,
@@ -60,6 +96,8 @@ impl Engine {
                 glide_secs: AtomicF32::new(0.0),
                 tone_generation: AtomicU32::new(0),
                 volume: AtomicF32::new(0.5),
+                noise_level: AtomicF32::new(0.0),
+                noise: AtomicU32::new(Noise::Off as u32),
                 playing: AtomicBool::new(false),
                 release_secs: AtomicF32::new(0.08),
                 silent: AtomicBool::new(true),
@@ -84,6 +122,11 @@ impl Engine {
 
     pub fn set_volume(&self, volume: f32) {
         self.shared.volume.set(volume.clamp(0.0, 1.0));
+    }
+
+    pub fn set_noise(&self, noise: Noise, level: f32) {
+        self.shared.noise.store(noise as u32, Ordering::Relaxed);
+        self.shared.noise_level.set(level.clamp(0.0, 1.0));
     }
 
     pub fn play(&mut self) {
@@ -191,6 +234,8 @@ struct Voice {
     initialized: bool,
     /// Smoothed master gain (volume x play envelope).
     gain: f32,
+    noise_gain: f32,
+    noise: NoiseGen,
 }
 
 impl Voice {
@@ -208,6 +253,8 @@ impl Voice {
             seen_generation: u32::MAX,
             initialized: false,
             gain: 0.0,
+            noise_gain: 0.0,
+            noise: NoiseGen::new(),
         }
     }
 
@@ -244,15 +291,24 @@ impl Voice {
 
         let playing = self.shared.playing.load(Ordering::Relaxed);
         let volume = self.shared.volume.get();
+        let noise_kind = Noise::from_u32(self.shared.noise.load(Ordering::Relaxed));
+        let noise_level = if noise_kind == Noise::Off {
+            0.0
+        } else {
+            self.shared.noise_level.get()
+        };
 
         let (gain_target, gain_k) = if playing {
             (volume, self.smoothing(PARAM_SMOOTHING_SECS))
         } else {
             (0.0, self.smoothing(self.shared.release_secs.get() / 5.0))
         };
+        let noise_target = noise_level * if playing { 1.0 } else { 0.0 };
+        let noise_k = gain_k;
 
-        if !playing && self.gain < 1e-5 {
+        if !playing && self.gain < 1e-5 && self.noise_gain < 1e-5 {
             self.gain = 0.0;
+            self.noise_gain = 0.0;
             self.shared.silent.store(true, Ordering::Relaxed);
             out.fill(T::EQUILIBRIUM);
             return;
@@ -268,13 +324,21 @@ impl Voice {
                 self.glide_remaining -= 1;
             }
             self.gain += (gain_target - self.gain) * gain_k;
+            self.noise_gain += (noise_target - self.noise_gain) * noise_k;
 
             self.phase_l = (self.phase_l + self.carrier * inv_sr).fract();
             self.phase_r = (self.phase_r + (self.carrier + self.beat) * inv_sr).fract();
 
             let tone = self.gain * TONE_GAIN;
-            let l = (self.phase_l * tau).sin() * tone;
-            let r = (self.phase_r * tau).sin() * tone;
+            let mut l = (self.phase_l * tau).sin() * tone;
+            let mut r = (self.phase_r * tau).sin() * tone;
+
+            if self.noise_gain > 1e-6 {
+                let n = self.noise_gain * self.gain * NOISE_GAIN;
+                let (nl, nr) = self.noise.next(noise_kind);
+                l += nl * n;
+                r += nr * n;
+            }
 
             let l = l.clamp(-1.0, 1.0);
             let r = r.clamp(-1.0, 1.0);
@@ -291,6 +355,58 @@ impl Voice {
     }
 }
 
+/// Independent per-channel noise sources, normalized to roughly unit peak.
+struct NoiseGen {
+    rng: u32,
+    pink: [[f32; 3]; 2],
+    brown: [f32; 2],
+}
+
+impl NoiseGen {
+    fn new() -> Self {
+        Self {
+            rng: 0x9E37_79B9,
+            pink: [[0.0; 3]; 2],
+            brown: [0.0; 2],
+        }
+    }
+
+    fn white(&mut self) -> f32 {
+        // xorshift32
+        let mut x = self.rng;
+        x ^= x << 13;
+        x ^= x >> 17;
+        x ^= x << 5;
+        self.rng = x;
+        (x as f32 / u32::MAX as f32) * 2.0 - 1.0
+    }
+
+    fn channel(&mut self, kind: Noise, ch: usize) -> f32 {
+        let w = self.white();
+        match kind {
+            Noise::Off => 0.0,
+            Noise::White => w * 0.5,
+            Noise::Pink => {
+                // Paul Kellet's economy pink filter.
+                let b = &mut self.pink[ch];
+                b[0] = 0.99765 * b[0] + w * 0.099_046;
+                b[1] = 0.963 * b[1] + w * 0.296_516_4;
+                b[2] = 0.57 * b[2] + w * 1.052_691_3;
+                (b[0] + b[1] + b[2] + w * 0.1848) * 0.2
+            }
+            Noise::Brown => {
+                let b = &mut self.brown[ch];
+                *b = (*b + 0.02 * w) / 1.02;
+                *b * 3.5
+            }
+        }
+    }
+
+    fn next(&mut self, kind: Noise) -> (f32, f32) {
+        (self.channel(kind, 0), self.channel(kind, 1))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -301,6 +417,7 @@ mod tests {
         let engine = Engine::new();
         engine.set_tone(carrier, beat, 0.0);
         engine.set_volume(1.0);
+        engine.set_noise(Noise::Off, 0.0);
         engine.shared.playing.store(true, Ordering::Relaxed);
         let voice = Voice::new(SR, Arc::clone(&engine.shared));
         (engine, voice)
@@ -366,5 +483,16 @@ mod tests {
         render(&mut v, 0.5);
         assert!(e.shared.silent.load(Ordering::Relaxed));
         assert!(render(&mut v, 0.05).iter().all(|&x| x == 0.0));
+    }
+
+    #[test]
+    fn noise_stays_in_range() {
+        for kind in [Noise::White, Noise::Pink, Noise::Brown] {
+            let (e, mut v) = setup(200.0, 40.0);
+            e.set_noise(kind, 1.0);
+            let out = render(&mut v, 2.0);
+            let peak = out.iter().fold(0.0f32, |m, x| m.max(x.abs()));
+            assert!(peak <= 1.0 && peak > TONE_GAIN, "{kind:?} peak {peak}");
+        }
     }
 }
