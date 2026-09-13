@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use eframe::egui::{
     self, Align2, Color32, FontId, Key, Pos2, RichText, Sense, Stroke, StrokeKind, Vec2, vec2,
@@ -9,6 +9,9 @@ use crate::audio::{Engine, Noise};
 use crate::presets::{self, BEAT_RANGE, BUILTINS, CARRIER_RANGE};
 
 const STORAGE_KEY: &str = "settings";
+const TIMER_CHOICES: [u32; 7] = [0, 15, 25, 30, 45, 60, 90];
+/// Fade-out used when a session timer ends, so it doesn't cut off abruptly.
+const TIMER_RELEASE_SECS: f32 = 8.0;
 const STOP_RELEASE_SECS: f32 = 0.08;
 const ACCENT: Color32 = Color32::from_rgb(64, 170, 160);
 
@@ -28,6 +31,7 @@ struct Settings {
     noise: Noise,
     noise_level: f32,
     glide_secs: f32,
+    timer_minutes: u32,
 }
 
 impl Default for Settings {
@@ -41,6 +45,7 @@ impl Default for Settings {
             noise: Noise::Pink,
             noise_level: 0.15,
             glide_secs: 4.0,
+            timer_minutes: 0,
         }
     }
 }
@@ -51,6 +56,7 @@ pub struct App {
     carrier_text: String,
     beat_text: String,
     input_error: Option<String>,
+    timer_end: Option<Instant>,
 }
 
 impl App {
@@ -70,6 +76,7 @@ impl App {
             s,
             engine,
             input_error: None,
+            timer_end: None,
         }
     }
 
@@ -106,12 +113,26 @@ impl App {
     fn toggle_play(&mut self) {
         if self.engine.is_playing() {
             self.engine.stop(STOP_RELEASE_SECS);
+            self.timer_end = None;
         } else {
             self.engine.play();
+            self.timer_end = (self.s.timer_minutes > 0 && self.engine.is_playing()).then(|| {
+                Instant::now() + Duration::from_secs(u64::from(self.s.timer_minutes) * 60)
+            });
         }
     }
 
     fn housekeeping(&mut self, ctx: &egui::Context) {
+        if let Some(end) = self.timer_end {
+            let now = Instant::now();
+            if now >= end {
+                self.engine.stop(TIMER_RELEASE_SECS);
+                self.timer_end = None;
+            } else {
+                // Repaint once per second for the countdown; nothing else runs while idle.
+                ctx.request_repaint_after((end - now).min(Duration::from_secs(1)));
+            }
+        }
         if self.engine.tick() {
             ctx.request_repaint_after(Duration::from_millis(100));
         }
@@ -171,6 +192,14 @@ impl App {
                 self.toggle_play();
             }
 
+            if let Some(end) = self.timer_end {
+                let left = end.saturating_duration_since(Instant::now()).as_secs();
+                ui.vertical_centered(|ui| {
+                    ui.label(
+                        RichText::new(format!("Ends in {}:{:02}", left / 60, left % 60)).weak(),
+                    );
+                });
+            }
             if let Some(err) = &self.engine.error {
                 ui.colored_label(Color32::from_rgb(230, 110, 100), err);
             }
@@ -298,6 +327,25 @@ impl App {
                             .fixed_decimals(0),
                     )
                     .on_hover_text("Glide time when switching presets during playback");
+                    ui.end_row();
+
+                    ui.label("Timer");
+                    egui::ComboBox::from_id_salt("timer")
+                        .width(80.0)
+                        .selected_text(timer_label(self.s.timer_minutes))
+                        .show_ui(ui, |ui| {
+                            for m in TIMER_CHOICES {
+                                if ui
+                                    .selectable_value(&mut self.s.timer_minutes, m, timer_label(m))
+                                    .changed()
+                                    && self.engine.is_playing()
+                                {
+                                    self.timer_end = (m > 0).then(|| {
+                                        Instant::now() + Duration::from_secs(u64::from(m) * 60)
+                                    });
+                                }
+                            }
+                        });
                     ui.end_row();
                 });
         });
@@ -445,6 +493,14 @@ fn beat_envelope(ui: &mut egui::Ui, beat: f32, active: bool) {
         FontId::proportional(10.0),
         Color32::from_gray(110),
     );
+}
+
+fn timer_label(minutes: u32) -> String {
+    if minutes == 0 {
+        "Off".to_string()
+    } else {
+        format!("{minutes} min")
+    }
 }
 
 fn fmt_hz(v: f32) -> String {
