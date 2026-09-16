@@ -1,5 +1,14 @@
+use serde::{Deserialize, Serialize};
+
 pub const CARRIER_RANGE: std::ops::RangeInclusive<f32> = 40.0..=1500.0;
 pub const BEAT_RANGE: std::ops::RangeInclusive<f32> = 0.5..=100.0;
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Preset {
+    pub name: String,
+    pub carrier: f32,
+    pub beat: f32,
+}
 
 pub struct Builtin {
     pub name: &'static str,

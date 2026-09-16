@@ -6,7 +6,7 @@ use eframe::egui::{
 use serde::{Deserialize, Serialize};
 
 use crate::audio::{Engine, Noise};
-use crate::presets::{self, BEAT_RANGE, BUILTINS, CARRIER_RANGE};
+use crate::presets::{self, BEAT_RANGE, BUILTINS, CARRIER_RANGE, Preset};
 
 const STORAGE_KEY: &str = "settings";
 const TIMER_CHOICES: [u32; 7] = [0, 15, 25, 30, 45, 60, 90];
@@ -18,6 +18,7 @@ const ACCENT: Color32 = Color32::from_rgb(64, 170, 160);
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 enum Active {
     Builtin(String),
+    User(String),
     Custom,
 }
 
@@ -32,6 +33,7 @@ struct Settings {
     noise_level: f32,
     glide_secs: f32,
     timer_minutes: u32,
+    user_presets: Vec<Preset>,
 }
 
 impl Default for Settings {
@@ -46,6 +48,7 @@ impl Default for Settings {
             noise_level: 0.15,
             glide_secs: 4.0,
             timer_minutes: 0,
+            user_presets: Vec::new(),
         }
     }
 }
@@ -56,6 +59,7 @@ pub struct App {
     carrier_text: String,
     beat_text: String,
     input_error: Option<String>,
+    new_preset_name: String,
     timer_end: Option<Instant>,
 }
 
@@ -76,6 +80,7 @@ impl App {
             s,
             engine,
             input_error: None,
+            new_preset_name: String::new(),
             timer_end: None,
         }
     }
@@ -110,6 +115,24 @@ impl App {
         }
     }
 
+    fn save_preset(&mut self) {
+        let name = self.new_preset_name.trim().to_string();
+        if name.is_empty() {
+            return;
+        }
+        let preset = Preset {
+            name: name.clone(),
+            carrier: self.s.carrier,
+            beat: self.s.beat,
+        };
+        match self.s.user_presets.iter_mut().find(|p| p.name == name) {
+            Some(existing) => *existing = preset,
+            None => self.s.user_presets.push(preset),
+        }
+        self.s.active = Active::User(name);
+        self.new_preset_name.clear();
+    }
+
     fn toggle_play(&mut self) {
         if self.engine.is_playing() {
             self.engine.stop(STOP_RELEASE_SECS);
@@ -140,7 +163,7 @@ impl App {
 
     fn now_playing(&mut self, ui: &mut egui::Ui) {
         let (title, subtitle) = match &self.s.active {
-            Active::Builtin(name) => (
+            Active::Builtin(name) | Active::User(name) => (
                 name.clone(),
                 format!(
                     "{} · {} Hz beat",
@@ -220,6 +243,46 @@ impl App {
         if let Some(i) = picked {
             self.select_builtin(i);
         }
+
+        if self.s.user_presets.is_empty() {
+            return;
+        }
+        section(ui, "My presets");
+        let mut picked = None;
+        let mut remove = None;
+        for (i, p) in self.s.user_presets.iter().enumerate() {
+            let selected = self.s.active == Active::User(p.name.clone());
+            let subtitle = format!(
+                "{} · carrier {} Hz",
+                presets::band_for(p.beat),
+                fmt_hz(p.carrier)
+            );
+            let right = format!("{} Hz", fmt_hz(p.beat));
+            let resp = preset_row(ui, selected, &p.name, &subtitle, &right);
+            if resp.clicked() {
+                picked = Some(i);
+            }
+            resp.context_menu(|ui| {
+                if ui.button("Delete preset").clicked() {
+                    remove = Some(i);
+                }
+            });
+        }
+        if let Some(i) = picked {
+            let p = self.s.user_presets[i].clone();
+            self.select(p.carrier, p.beat, Active::User(p.name));
+        }
+        if let Some(i) = remove {
+            let p = self.s.user_presets.remove(i);
+            if self.s.active == Active::User(p.name) {
+                self.s.active = Active::Custom;
+            }
+        }
+        ui.label(
+            RichText::new("Right-click a preset to delete it.")
+                .small()
+                .weak(),
+        );
     }
 
     fn custom(&mut self, ui: &mut egui::Ui) {
@@ -262,6 +325,24 @@ impl App {
             if let Some(err) = &self.input_error {
                 ui.colored_label(Color32::from_rgb(230, 110, 100), err);
             }
+
+            ui.separator();
+            ui.horizontal(|ui| {
+                let r = ui.add(
+                    egui::TextEdit::singleline(&mut self.new_preset_name)
+                        .desired_width(ui.available_width() - 120.0)
+                        .hint_text("Name this setting"),
+                );
+                let enter = r.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter));
+                let can_save = !self.new_preset_name.trim().is_empty();
+                if ui
+                    .add_enabled(can_save, egui::Button::new("Save preset"))
+                    .clicked()
+                    || (enter && can_save)
+                {
+                    self.save_preset();
+                }
+            });
         });
     }
 
