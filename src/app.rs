@@ -161,6 +161,25 @@ impl App {
         }
     }
 
+    fn shortcuts(&mut self, ctx: &egui::Context) {
+        if ctx.egui_wants_keyboard_input() {
+            return;
+        }
+        let keys = [Key::Num1, Key::Num2, Key::Num3, Key::Num4, Key::Num5];
+        let (space, digit) = ctx.input(|i| {
+            (
+                i.key_pressed(Key::Space),
+                keys.iter().position(|k| i.key_pressed(*k)),
+            )
+        });
+        if space {
+            self.toggle_play();
+        }
+        if let Some(i) = digit.filter(|i| *i < BUILTINS.len()) {
+            self.select_builtin(i);
+        }
+    }
+
     fn now_playing(&mut self, ui: &mut egui::Ui) {
         let (title, subtitle) = match &self.s.active {
             Active::Builtin(name) | Active::User(name) => (
@@ -211,7 +230,11 @@ impl App {
                     ACCENT
                 })
                 .corner_radius(8.0);
-            if ui.add_sized([ui.available_width(), 44.0], button).clicked() {
+            if ui
+                .add_sized([ui.available_width(), 44.0], button)
+                .on_hover_text("Space")
+                .clicked()
+            {
                 self.toggle_play();
             }
 
@@ -236,7 +259,10 @@ impl App {
             let selected = self.s.active == Active::Builtin(p.name.to_string());
             let right = format!("{} Hz", fmt_hz(p.beat));
             let subtitle = format!("{} · {}", p.band, p.blurb);
-            if preset_row(ui, selected, p.name, &subtitle, &right).clicked() {
+            if preset_row(ui, selected, p.name, &subtitle, &right)
+                .on_hover_text(format!("Key {}", i + 1))
+                .clicked()
+            {
                 picked = Some(i);
             }
         }
@@ -437,6 +463,7 @@ impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
         self.housekeeping(&ctx);
+        self.shortcuts(&ctx);
 
         egui::CentralPanel::default().show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
