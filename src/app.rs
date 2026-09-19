@@ -70,7 +70,7 @@ impl App {
             .storage
             .and_then(|st| eframe::get_value(st, STORAGE_KEY))
             .unwrap_or_default();
-        let engine = Engine::new();
+        let engine = Engine::new(cc.egui_ctx.clone());
         engine.set_tone(s.carrier, s.beat, 0.0);
         engine.set_volume(s.volume);
         engine.set_noise(s.noise, s.noise_level);

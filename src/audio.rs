@@ -9,6 +9,7 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{FromSample, SampleFormat, SizedSample};
+use eframe::egui;
 use serde::{Deserialize, Serialize};
 
 /// Peak amplitude of each tone at full volume. Leaves headroom for noise.
@@ -84,11 +85,13 @@ pub struct Engine {
     shared: Arc<Shared>,
     stream: Option<cpal::Stream>,
     stream_running: bool,
+    needs_rebuild: Arc<AtomicBool>,
+    repaint: egui::Context,
     pub error: Option<String>,
 }
 
 impl Engine {
-    pub fn new() -> Self {
+    pub fn new(repaint: egui::Context) -> Self {
         Self {
             shared: Arc::new(Shared {
                 carrier: AtomicF32::new(200.0),
@@ -104,6 +107,8 @@ impl Engine {
             }),
             stream: None,
             stream_running: false,
+            needs_rebuild: Arc::new(AtomicBool::new(false)),
+            repaint,
             error: None,
         }
     }
@@ -154,6 +159,14 @@ impl Engine {
 
     /// Housekeeping from the UI thread. Returns true while it needs to be called again soon.
     pub fn tick(&mut self) -> bool {
+        if self.needs_rebuild.swap(false, Ordering::Relaxed) {
+            let was_playing = self.is_playing();
+            self.stream = None;
+            self.stream_running = false;
+            if was_playing {
+                self.play();
+            }
+        }
         if self.stream_running && !self.is_playing() {
             if self.shared.silent.load(Ordering::Relaxed) {
                 // Pausing releases the audio thread entirely: zero CPU while idle.
@@ -209,11 +222,23 @@ impl Engine {
     {
         let channels = config.channels as usize;
         let mut voice = Voice::new(config.sample_rate as f32, Arc::clone(&self.shared));
+        let needs_rebuild = Arc::clone(&self.needs_rebuild);
+        let repaint = self.repaint.clone();
 
         device.build_output_stream(
             config,
             move |data: &mut [T], _: &cpal::OutputCallbackInfo| voice.render(data, channels),
-            |err: cpal::Error| eprintln!("audio stream error: {err}"),
+            move |err: cpal::Error| {
+                use cpal::ErrorKind::*;
+                match err.kind() {
+                    Xrun | RealtimeDenied => {}
+                    _ => {
+                        // Device unplugged / default output changed: reopen on the UI thread.
+                        needs_rebuild.store(true, Ordering::Relaxed);
+                        repaint.request_repaint();
+                    }
+                }
+            },
             None,
         )
     }
@@ -414,7 +439,7 @@ mod tests {
     const SR: f32 = 48_000.0;
 
     fn setup(carrier: f32, beat: f32) -> (Engine, Voice) {
-        let engine = Engine::new();
+        let engine = Engine::new(egui::Context::default());
         engine.set_tone(carrier, beat, 0.0);
         engine.set_volume(1.0);
         engine.set_noise(Noise::Off, 0.0);
