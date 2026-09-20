@@ -7,3 +7,6 @@ edition = "2024"
 cpal = "0.18.2"
 eframe = { version = "0.36.2", default-features = false, features = ["glow", "default_fonts", "persistence", "wayland", "x11", "accesskit"] }
 serde = { version = "1.0.229", features = ["derive"] }
+
+[dev-dependencies]
+image = { version = "0.25", default-features = false, features = ["png"] }
