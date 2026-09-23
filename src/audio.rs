@@ -88,6 +88,7 @@ pub struct Engine {
     needs_rebuild: Arc<AtomicBool>,
     repaint: egui::Context,
     pub error: Option<String>,
+    pub device_name: Option<String>,
 }
 
 impl Engine {
@@ -110,6 +111,7 @@ impl Engine {
             needs_rebuild: Arc::new(AtomicBool::new(false)),
             repaint,
             error: None,
+            device_name: None,
         }
     }
 
@@ -206,6 +208,7 @@ impl Engine {
         }
         .map_err(|e| format!("Could not open audio stream: {e}"))?;
 
+        self.device_name = device.description().ok().map(|d| d.name().to_string());
         self.stream = Some(stream);
         self.stream_running = false;
         self.error = None;

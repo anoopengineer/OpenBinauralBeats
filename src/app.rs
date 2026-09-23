@@ -474,7 +474,16 @@ impl eframe::App for App {
                 self.sound(ui);
                 ui.add_space(8.0);
                 ui.vertical_centered(|ui| {
-                    ui.label(RichText::new("Use stereo headphones").small().weak());
+                    let device = self
+                        .engine
+                        .device_name
+                        .as_deref()
+                        .unwrap_or("Default output");
+                    ui.label(
+                        RichText::new(format!("Use stereo headphones · {device}"))
+                            .small()
+                            .weak(),
+                    );
                 });
                 ui.add_space(4.0);
             });
