@@ -2,6 +2,8 @@
 name = "binaural-beats"
 version = "0.1.0"
 edition = "2024"
+description = "Lightweight native binaural beats player"
+license = "MIT"
 
 [dependencies]
 cpal = "0.18.2"
@@ -10,3 +12,10 @@ serde = { version = "1.0.229", features = ["derive"] }
 
 [dev-dependencies]
 image = { version = "0.25", default-features = false, features = ["png"] }
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
