@@ -41,23 +41,44 @@ cargo run --release
 
 On Linux you also need ALSA dev headers to build (`sudo apt install libasound2-dev`).
 
-## Package
+## Releases and downloads
 
-### macOS
+Downloads are built only by CI, never by hand:
+
+- **`.github/workflows/ci.yml`** runs on every push and pull request. It runs `cargo fmt`, `clippy` and the tests
+  on macOS, Windows and Linux, launches the app headless on Linux, and checks the website for broken links.
+- **`.github/workflows/release.yml`** runs when a `v*` tag is pushed. It checks that the tag matches the
+  `Cargo.toml` version, then builds, smoke-tests and publishes:
+
+  | File | Platform |
+  |---|---|
+  | `OpenBinauralBeats-macos.dmg` | macOS 11+, universal (Apple Silicon + Intel), ad-hoc signed |
+  | `OpenBinauralBeats-windows-x64.exe` | Windows 10/11 x64, with embedded icon and version info |
+  | `OpenBinauralBeats-linux-x86_64.AppImage` | Most x86_64 distros |
+  | `OpenBinauralBeats-linux-amd64.deb` | Ubuntu 22.04+, Debian 12+ |
+  | `OpenBinauralBeats-linux-x86_64.tar.gz` | Plain binary, `.desktop` file and icon |
+  | `SHA256SUMS.txt` | Checksums for everything above |
+
+  Each file also gets a GitHub build attestation. The release is created as a draft and published only after
+  every file is attached, so `releases/latest` never points at a partial release.
+
+To cut a release:
 
 ```bash
-./scripts/package-macos.sh              # native architecture
-./scripts/package-macos.sh --universal  # Apple Silicon + Intel
+scripts/release.sh 0.2.0        # bumps Cargo.toml, runs checks, commits, tags v0.2.0
+git push origin main v0.2.0     # triggers the release workflow
 ```
 
-This writes `dist/OpenBinauralBeats.app` and `dist/OpenBinauralBeats-<version>.dmg`. The app has an ad-hoc
-signature, which is enough to run it on your own machine. To distribute it to other people, sign it with a
-Developer ID and notarize it.
+You can also run the release workflow manually from the Actions tab. That builds and tests everything without
+publishing.
 
-### Windows / Linux
+To build packages locally:
 
-`cargo build --release` produces a single executable in `target/release/`. Release builds on Windows do not
-open a console window.
+```bash
+./scripts/package-macos.sh --universal   # dist/OpenBinauralBeats.app and .dmg
+./scripts/package-linux.sh               # after cargo build --release; needs cargo-deb and appimagetool
+scripts/smoke-test.sh target/release/open-binaural-beats
+```
 
 ## Development
 
@@ -91,6 +112,13 @@ The evidence for most of the claimed effects is limited and varies between peopl
 and focus aid, not a medical treatment. Start at a low volume. Do not use it while driving. If you have
 epilepsy or another neurological condition, talk to a doctor first.
 
+## Website
+
+The site at [openbinauralbeats.com](https://openbinauralbeats.com) is static HTML in `website/`, deployed by
+Netlify from `main` using `netlify.toml`. Preview it with `python3 -m http.server -d website` and check it with
+`python3 scripts/check-site.py`. Download buttons link to `/download/*`, which Netlify redirects to the latest
+GitHub release files, so the site never needs editing for a new release.
+
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).
