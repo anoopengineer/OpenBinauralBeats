@@ -1,5 +1,5 @@
 [package]
-name = "binaural-beats"
+name = "open-binaural-beats"
 version = "0.1.0"
 edition = "2024"
 description = "Lightweight native binaural beats player"

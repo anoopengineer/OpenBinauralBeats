@@ -1,4 +1,4 @@
-# Binaural Beats
+# OpenBinauralBeats
 
 A small native desktop app that generates binaural beats in real time. Written in Rust with
 [egui](https://github.com/emilk/egui) for the UI and [cpal](https://github.com/RustAudio/cpal) for audio.
@@ -50,7 +50,7 @@ On Linux you also need ALSA dev headers to build (`sudo apt install libasound2-d
 ./scripts/package-macos.sh --universal  # Apple Silicon + Intel
 ```
 
-This writes `dist/Binaural Beats.app` and `dist/BinauralBeats-<version>.dmg`. The app has an ad-hoc
+This writes `dist/OpenBinauralBeats.app` and `dist/OpenBinauralBeats-<version>.dmg`. The app has an ad-hoc
 signature, which is enough to run it on your own machine. To distribute it to other people, sign it with a
 Developer ID and notarize it.
 

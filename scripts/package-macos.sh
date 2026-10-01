@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Builds dist/Binaural Beats.app and dist/BinauralBeats-<version>.dmg using only stock macOS tools.
+# Builds dist/OpenBinauralBeats.app and dist/OpenBinauralBeats-<version>.dmg using only stock macOS tools.
 # Pass --universal to build an Intel + Apple Silicon binary (needs both rustup targets).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-APP_NAME="Binaural Beats"
-BIN=binaural-beats
-BUNDLE_ID=com.anoopkunjuraman.binauralbeats
+APP_NAME="OpenBinauralBeats"
+BIN=open-binaural-beats
+BUNDLE_ID=com.anoopkunjuraman.openbinauralbeats
 VERSION=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
 DIST=dist
 APP="$DIST/$APP_NAME.app"
@@ -60,7 +60,7 @@ PLIST
 # Ad-hoc signature so Gatekeeper on Apple Silicon will launch it locally.
 codesign --force --deep --sign - "$APP"
 
-DMG="$DIST/BinauralBeats-$VERSION.dmg"
+DMG="$DIST/OpenBinauralBeats-$VERSION.dmg"
 STAGE=$(mktemp -d)
 cp -R "$APP" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"

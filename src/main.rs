@@ -8,8 +8,8 @@ use eframe::egui;
 
 fn main() -> eframe::Result {
     let mut viewport = egui::ViewportBuilder::default()
-        .with_title("Binaural Beats")
-        .with_app_id("binaural-beats")
+        .with_title("OpenBinauralBeats")
+        .with_app_id("open-binaural-beats")
         .with_inner_size([440.0, 820.0])
         .with_min_inner_size([380.0, 480.0]);
     if let Ok(icon) = eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon-256.png")) {
@@ -20,7 +20,7 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native(
-        "Binaural Beats",
+        "OpenBinauralBeats",
         options,
         Box::new(|cc| Ok(Box::new(app::App::new(cc)))),
     )
