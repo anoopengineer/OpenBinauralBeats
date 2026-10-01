@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=OpenBinauralBeats
+GenericName=Binaural Beats Generator
+Comment=Binaural beats for focus, relaxation and sleep
+Exec=open-binaural-beats
+Icon=open-binaural-beats
+Terminal=false
+Categories=AudioVideo;Audio;
+Keywords=binaural;beats;focus;sleep;meditation;noise;
+StartupWMClass=open-binaural-beats
