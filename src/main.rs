@@ -7,6 +7,11 @@ mod presets;
 use eframe::egui;
 
 fn main() -> eframe::Result {
+    // Lets CI smoke-test release binaries without opening a window.
+    if std::env::args().any(|a| a == "--version" || a == "-V") {
+        println!("OpenBinauralBeats {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
     let mut viewport = egui::ViewportBuilder::default()
         .with_title("OpenBinauralBeats")
         .with_app_id("open-binaural-beats")
