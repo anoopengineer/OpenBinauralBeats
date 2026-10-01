@@ -1,0 +1,50 @@
+# Static site in website/; no build step.
+[build]
+  base = "website"
+  publish = "."
+  command = ""
+
+# Stable download URLs used by the site. They point at the latest GitHub release assets
+# produced by .github/workflows/release.yml.
+[[redirects]]
+  from = "/download/macos"
+  to = "https://github.com/anoopengineer/OpenBinauralBeats/releases/latest/download/OpenBinauralBeats-macos.dmg"
+  status = 302
+
+[[redirects]]
+  from = "/download/windows"
+  to = "https://github.com/anoopengineer/OpenBinauralBeats/releases/latest/download/OpenBinauralBeats-windows-x64.exe"
+  status = 302
+
+[[redirects]]
+  from = "/download/linux"
+  to = "https://github.com/anoopengineer/OpenBinauralBeats/releases/latest/download/OpenBinauralBeats-linux-x86_64.AppImage"
+  status = 302
+
+[[redirects]]
+  from = "/download/linux-deb"
+  to = "https://github.com/anoopengineer/OpenBinauralBeats/releases/latest/download/OpenBinauralBeats-linux-amd64.deb"
+  status = 302
+
+[[redirects]]
+  from = "/download/linux-tar"
+  to = "https://github.com/anoopengineer/OpenBinauralBeats/releases/latest/download/OpenBinauralBeats-linux-x86_64.tar.gz"
+  status = 302
+
+[[redirects]]
+  from = "/download/checksums"
+  to = "https://github.com/anoopengineer/OpenBinauralBeats/releases/latest/download/SHA256SUMS.txt"
+  status = 302
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Content-Type-Options = "nosniff"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+[[headers]]
+  for = "/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"

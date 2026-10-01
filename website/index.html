@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Free Open Source Binaural Beats Generator | OpenBinauralBeats</title>
+  <meta name="description" content="Free, open source binaural beats generator for focus, relaxation and sleep. 40 Hz focus mode, custom frequencies and noise. For Mac, Windows and Linux.">
+  <link rel="canonical" href="https://openbinauralbeats.com/">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" type="image/png" sizes="192x192" href="/img/icon-192.png">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#16171b">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="OpenBinauralBeats">
+  <meta property="og:title" content="OpenBinauralBeats: free, open source binaural beats generator">
+  <meta property="og:description" content="Sounds that help you focus, relax and sleep. Free binaural beats app for Mac, Windows and Linux.">
+  <meta property="og:url" content="https://openbinauralbeats.com/">
+  <meta property="og:image" content="https://openbinauralbeats.com/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="OpenBinauralBeats: sounds that help you focus, relax and sleep">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "OpenBinauralBeats",
+    "description": "Free, open source binaural beats generator for focus, relaxation and sleep, with a 40 Hz focus mode, custom frequencies, background noise and a session timer.",
+    "url": "https://openbinauralbeats.com/",
+    "image": "https://openbinauralbeats.com/img/icon-512.png",
+    "applicationCategory": "HealthApplication",
+    "applicationSubCategory": "Binaural beats generator",
+    "operatingSystem": "macOS 11+, Windows 10+, Linux",
+    "license": "https://opensource.org/licenses/MIT",
+    "codeRepository": "https://github.com/anoopengineer/OpenBinauralBeats",
+    "sameAs": ["https://github.com/anoopengineer/OpenBinauralBeats"],
+    "isAccessibleForFree": true,
+    "downloadUrl": "https://openbinauralbeats.com/#download",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/main.js" defer></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/">
+        <img src="/img/icon-256.png" alt="OpenBinauralBeats logo" width="28" height="28">
+        <span>OpenBinauralBeats</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#guides">Guides</a>
+        <a href="#faq">FAQ</a>
+        <a class="gh-link" href="https://github.com/anoopengineer/OpenBinauralBeats" rel="noopener"><svg class="gh-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span></a>
+        <a class="nav-cta" href="#download">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Free · Open source · No subscriptions</p>
+          <h1>Sounds that help you focus, relax and sleep.</h1>
+          <p class="lede">
+            Put on headphones and play two gentle tones, one in each ear. Your brain blends them into a soft
+            rhythm that can help you settle into the state you want. OpenBinauralBeats is a free binaural beats
+            generator for your desktop, with a 40&nbsp;Hz focus mode, ready-made presets and custom frequencies.
+          </p>
+
+          <div class="download" id="hero-download">
+            <a class="btn btn-primary" id="primary-download" href="#download">
+              <span class="btn-label" id="primary-label">Download</span>
+              <span class="btn-sub" id="primary-sub">macOS · Windows · Linux</span>
+            </a>
+            <p class="other-platforms" id="other-platforms" hidden></p>
+            <p class="mobile-note" id="mobile-note" hidden>
+              OpenBinauralBeats is a desktop app. Open this page on your Mac or PC to download it, or try the demo
+              in the player on this page.
+            </p>
+          </div>
+          <p class="fineprint">MIT licensed · Open source ·
+            <a href="https://github.com/anoopengineer/OpenBinauralBeats" rel="noopener">View source on GitHub</a></p>
+        </div>
+
+        <div class="mock" aria-label="Interactive preview of the app">
+          <div class="mock-window">
+            <div class="mock-titlebar"><i></i><i></i><i></i><span>OpenBinauralBeats</span></div>
+            <div class="mock-body">
+              <div class="card now">
+                <div class="now-head">
+                  <div>
+                    <div class="now-title" id="mock-title">40 Hz Focus</div>
+                    <div class="now-sub" id="mock-sub">Gamma · 40 Hz beat</div>
+                  </div>
+                  <div class="now-lr" id="mock-lr">L 200 Hz<br>R 240 Hz</div>
+                </div>
+                <svg class="env" id="mock-env" viewBox="0 0 300 34" preserveAspectRatio="none" aria-hidden="true">
+                  <path id="mock-env-path" d=""></path>
+                </svg>
+                <button class="mock-play" id="mock-play" type="button">Play demo</button>
+                <p class="mock-hint">Plays in your browser. Use headphones.</p>
+              </div>
+              <div class="mock-section">Presets</div>
+              <div class="mock-presets" id="mock-presets"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="wrap">
+        <h2>A binaural beats generator with everything you need</h2>
+        <div class="features">
+          <article class="feature">
+            <h3>40 Hz focus mode</h3>
+            <p>A gamma-band preset for deep work: 200&nbsp;Hz in one ear, 240&nbsp;Hz in the other.</p>
+          </article>
+          <article class="feature">
+            <h3>Your own frequencies</h3>
+            <p>Type any carrier from 40 to 1500&nbsp;Hz and any beat from 0.5 to 100&nbsp;Hz. Save the ones you like as named presets.</p>
+          </article>
+          <article class="feature">
+            <h3>Smooth transitions</h3>
+            <p>Switching presets while playing glides between frequencies over up to 30 seconds. No clicks, no pops.</p>
+          </article>
+          <article class="feature">
+            <h3>Background noise</h3>
+            <p>Optional white, pink or brown noise at any level, to mask distractions.</p>
+          </article>
+          <article class="feature">
+            <h3>Session timer</h3>
+            <p>Set 15 to 90 minutes and it fades out gently at the end. Good for a focus block or for falling asleep.</p>
+          </article>
+          <article class="feature">
+            <h3>Featherweight</h3>
+            <p>A single ~6&nbsp;MB native app. About 40&nbsp;MB of memory, 0% CPU when idle, and no runtime to install.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="presets">
+      <div class="wrap">
+        <h2>Binaural beat presets for focus, relaxation and sleep</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Preset</th><th>Band</th><th>Beat</th><th>Carrier</th><th>Good for</th></tr></thead>
+            <tbody>
+              <tr><td>40 Hz Focus</td><td>Gamma</td><td>40 Hz</td><td>200 Hz</td><td>Sustained attention, deep work</td></tr>
+              <tr><td>Focus</td><td>Beta</td><td>20 Hz</td><td>440 Hz</td><td>Alert, active concentration</td></tr>
+              <tr><td>Relax</td><td>Alpha</td><td>10 Hz</td><td>400 Hz</td><td>Calm, light meditation</td></tr>
+              <tr><td>Meditate</td><td>Theta</td><td>6 Hz</td><td>300 Hz</td><td>Meditation, creativity</td></tr>
+              <tr><td>Deep Sleep</td><td>Delta</td><td>2 Hz</td><td>200 Hz</td><td>Sleep, deep rest</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="how">
+      <div class="wrap two-col">
+        <div>
+          <h2>How binaural beats work</h2>
+          <p>
+            Each ear hears a slightly different pure tone, say 200&nbsp;Hz on the left and 240&nbsp;Hz on the right.
+            Your brain combines them and you perceive a soft pulse at the difference: 40&nbsp;Hz.
+            That pulse is the binaural beat.
+          </p>
+          <p>
+            Because the effect happens between your ears, you need stereo headphones. Speakers mix the two tones
+            in the air before they reach you.
+          </p>
+        </div>
+        <div class="bands">
+          <div class="band"><b>Delta</b><span>0.5–4 Hz</span><em>Deep sleep</em></div>
+          <div class="band"><b>Theta</b><span>4–8 Hz</span><em>Meditation, creativity</em></div>
+          <div class="band"><b>Alpha</b><span>8–13 Hz</span><em>Relaxation</em></div>
+          <div class="band"><b>Beta</b><span>13–30 Hz</span><em>Focus, alertness</em></div>
+          <div class="band"><b>Gamma</b><span>30+ Hz</span><em>Attention; 40 Hz is the most studied</em></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="download">
+      <div class="wrap">
+        <h2>Download the free binaural beats app</h2>
+        <p class="section-lede">Free for macOS, Windows and Linux. Every download is built from the
+          <a href="https://github.com/anoopengineer/OpenBinauralBeats" rel="noopener">public source code</a> by GitHub Actions.</p>
+        <div class="platforms">
+          <article class="platform" data-os="macos">
+            <h3>macOS</h3>
+            <p class="meta">macOS 11 or later · Apple Silicon and Intel</p>
+            <a class="btn btn-secondary" href="/download/macos">Download .dmg</a>
+            <ol>
+              <li>Open the .dmg and drag OpenBinauralBeats to Applications.</li>
+              <li>The first time, right-click the app and choose <b>Open</b>. The app isn't notarized by Apple yet,
+                so macOS will ask you to confirm.</li>
+            </ol>
+          </article>
+          <article class="platform" data-os="windows">
+            <h3>Windows</h3>
+            <p class="meta">Windows 10 or 11 · 64-bit</p>
+            <a class="btn btn-secondary" href="/download/windows">Download .exe</a>
+            <ol>
+              <li>Run OpenBinauralBeats.exe. There's nothing to install.</li>
+              <li>If SmartScreen warns you, click <b>More info</b>, then <b>Run anyway</b>. The app isn't code-signed yet.</li>
+            </ol>
+          </article>
+          <article class="platform" data-os="linux">
+            <h3>Linux</h3>
+            <p class="meta">x86_64 · Ubuntu 22.04+, Debian 12+, Fedora, Arch and others</p>
+            <a class="btn btn-secondary" href="/download/linux">Download AppImage</a>
+            <p class="alt-formats">Also as a <a href="/download/linux-deb">.deb</a> for Ubuntu and Debian, or a
+              <a href="/download/linux-tar">.tar.gz</a>.</p>
+            <ol>
+              <li>AppImage: run <code>chmod +x OpenBinauralBeats-linux-x86_64.AppImage</code>, then open it.</li>
+              <li>.deb: <code>sudo apt install ./OpenBinauralBeats-linux-amd64.deb</code></li>
+            </ol>
+          </article>
+        </div>
+        <p class="verify">Verify your download with the <a href="/download/checksums">SHA-256 checksums</a> and
+          GitHub <a href="https://github.com/anoopengineer/OpenBinauralBeats/attestations" rel="noopener">build attestations</a>.
+          <a href="https://github.com/anoopengineer/OpenBinauralBeats/releases" rel="noopener">All releases</a></p>
+      </div>
+    </section>
+
+    <section class="section" id="guides">
+      <div class="wrap">
+        <h2>Binaural beats guides</h2>
+        <p class="section-lede">New to binaural beats? Start here.</p>
+        <div class="guides">
+          <a class="guide" href="/what-are-binaural-beats/">
+            <h3>What are binaural beats?</h3>
+            <p>How they work, why you need headphones, and what the research says.</p>
+          </a>
+          <a class="guide" href="/40hz-binaural-beats/">
+            <h3>40 Hz binaural beats</h3>
+            <p>Why 40 Hz is the go-to frequency for deep work, and how to use it.</p>
+          </a>
+          <a class="guide" href="/binaural-beats-for-focus/">
+            <h3>Binaural beats for focus</h3>
+            <p>Beta or 40 Hz? Setting up a focus session that works.</p>
+          </a>
+          <a class="guide" href="/binaural-beats-for-studying/">
+            <h3>Binaural beats for studying</h3>
+            <p>Which frequency suits reading, problem sets and pre-exam nerves.</p>
+          </a>
+          <a class="guide" href="/binaural-beats-for-sleep/">
+            <h3>Binaural beats for sleep</h3>
+            <p>Delta and theta beats, a wind-down routine, and listening safely at night.</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="faq">
+      <div class="wrap narrow">
+        <h2>Frequently asked questions</h2>
+        <details>
+          <summary>What are binaural beats?</summary>
+          <p>Binaural beats happen when each ear hears a slightly different tone, for example 200 Hz in the left ear and 240 Hz in the right. Your brain blends the two and perceives a soft pulse at the difference, in this case 40 Hz. Many people use that pulse to help them focus, relax, meditate or fall asleep.</p>
+        </details>
+        <details>
+          <summary>Do I need headphones?</summary>
+          <p>Yes. Each ear has to hear its own tone, so you need stereo headphones or earbuds. Speakers mix the two tones in the air before they reach you, and the effect disappears.</p>
+        </details>
+        <details>
+          <summary>What are 40 Hz binaural beats?</summary>
+          <p>40 Hz is in the gamma range, which is linked to attention and concentration and is the most studied binaural beat frequency. The 40 Hz Focus preset plays 200 Hz in one ear and 240 Hz in the other, which makes a good background for deep work.</p>
+        </details>
+        <details>
+          <summary>Which binaural beat frequency is best for sleep?</summary>
+          <p>Delta beats, from 0.5 to 4 Hz, are associated with deep sleep, and theta beats, from 4 to 8 Hz, with drowsiness and meditation. Try the Deep Sleep preset (2 Hz) with the session timer, so the sound fades out on its own.</p>
+        </details>
+        <details>
+          <summary>Is OpenBinauralBeats really free?</summary>
+          <p>Yes. It's free and open source under the MIT license, with no ads, no account, no subscription and no in-app purchases. The source code is on <a href="https://github.com/anoopengineer/OpenBinauralBeats" rel="noopener">GitHub</a>.</p>
+        </details>
+        <details>
+          <summary>Does it collect any data?</summary>
+          <p>No. The app makes no network connections at all. Your settings and saved presets stay in a small file on your computer.</p>
+        </details>
+        <details>
+          <summary>Do binaural beats actually work?</summary>
+          <p>The evidence is mixed. Some studies show modest effects on attention, anxiety and relaxation, and the brain does respond measurably to the beats. Effects vary a lot between people. Treat it as a focus and relaxation aid, not a treatment.</p>
+        </details>
+        <details>
+          <summary>What volume should I use?</summary>
+          <p>Lower than you think. The beat works at a quiet, comfortable level. Start around 20 to 30 percent and adjust from there.</p>
+        </details>
+        <details>
+          <summary>Are binaural beats safe?</summary>
+          <p>For most people, yes. Don't use them while driving or doing anything that needs your full attention. If you have epilepsy, a seizure disorder or another neurological condition, check with a doctor first. Stop if you get a headache or feel uncomfortable.</p>
+        </details>
+        <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What are binaural beats?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Binaural beats happen when each ear hears a slightly different tone, for example 200 Hz in the left ear and 240 Hz in the right. Your brain blends the two and perceives a soft pulse at the difference, in this case 40 Hz. Many people use that pulse to help them focus, relax, meditate or fall asleep."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need headphones?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Each ear has to hear its own tone, so you need stereo headphones or earbuds. Speakers mix the two tones in the air before they reach you, and the effect disappears."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What are 40 Hz binaural beats?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "40 Hz is in the gamma range, which is linked to attention and concentration and is the most studied binaural beat frequency. The 40 Hz Focus preset plays 200 Hz in one ear and 240 Hz in the other, which makes a good background for deep work."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which binaural beat frequency is best for sleep?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Delta beats, from 0.5 to 4 Hz, are associated with deep sleep, and theta beats, from 4 to 8 Hz, with drowsiness and meditation. Try the Deep Sleep preset (2 Hz) with the session timer, so the sound fades out on its own."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is OpenBinauralBeats really free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. It's free and open source under the MIT license, with no ads, no account, no subscription and no in-app purchases."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it collect any data?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. The app makes no network connections at all. Your settings and saved presets stay in a small file on your computer."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do binaural beats actually work?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The evidence is mixed. Some studies show modest effects on attention, anxiety and relaxation, and the brain does respond measurably to the beats. Effects vary a lot between people. Treat it as a focus and relaxation aid, not a treatment."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What volume should I use?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Lower than you think. The beat works at a quiet, comfortable level. Start around 20 to 30 percent and adjust from there."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Are binaural beats safe?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "For most people, yes. Don't use them while driving or doing anything that needs your full attention. If you have epilepsy, a seizure disorder or another neurological condition, check with a doctor first. Stop if you get a headache or feel uncomfortable."
+      }
+    }
+  ]
+}
+        </script>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <div class="brand small">
+        <img src="/img/icon-256.png" alt="" width="20" height="20">
+        <span>OpenBinauralBeats</span>
+      </div>
+      <nav class="footer-links">
+        <a href="/what-are-binaural-beats/">What are binaural beats?</a>
+        <a href="/40hz-binaural-beats/">40 Hz binaural beats</a>
+        <a href="/binaural-beats-for-focus/">Binaural beats for focus</a>
+        <a href="/binaural-beats-for-studying/">Binaural beats for studying</a>
+        <a href="/binaural-beats-for-sleep/">Binaural beats for sleep</a>
+        <a href="https://github.com/anoopengineer/OpenBinauralBeats" rel="noopener">Source code on GitHub</a>
+      </nav>
+      <p>© 2026 OpenBinauralBeats · Free and open source (MIT) · For relaxation and focus. Not a medical device.</p>
+    </div>
+  </footer>
+</body>
+</html>

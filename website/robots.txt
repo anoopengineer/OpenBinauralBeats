@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://openbinauralbeats.com/sitemap.xml
